@@ -1,0 +1,204 @@
+Sub GetStockInfo()
+
+'This will loop code through every sheet, representing every year
+Dim ws As Worksheet
+For Each ws In Worksheets
+
+
+    'Set variable for holding stock ticker
+    Dim Ticker_Symbol As String
+    
+    'Set variables for open and close prices
+    Dim Open_price As Double
+    Dim Close_price As Double
+    Dim Yearly_change As Double
+    Dim Yearly_Pchange As Double
+    'Variable keeps track of row of 1st record for ticker
+    Dim First_row As Double
+    First_row = 2   'Set first row initially as 2, i.e. first opening price for 1st ticker
+     
+    
+    'Keep track of volume, to sum into total volume for year, per ticker
+    Dim Volume_Total As Double
+    Volume_Total = 0
+    
+    'Keep track of the location for each ticker in the summary table
+    Dim Summary_Table_Row As Integer
+    Summary_Table_Row = 2 'So that we start on row 2
+    
+    'Print Header for summary table
+    ws.Range("I1").Value = "Ticker"
+    ws.Range("J1").Value = "Yearly Change"
+    ws.Range("K1").Value = "Percent Change"
+    ws.Range("L1").Value = "Total Stock Volume"
+    
+    
+        'Loop through all the stock tickers, until cell is empty
+        'For i = 2 To 450 'How to make continuous til ends? While loop?
+        i = 2
+        Do Until IsEmpty(ws.Cells(i, 1))
+            i = i + 1
+        
+            'Check if proceeding cell(row) is the same ticker, if we are not...
+            If ws.Cells(i + 1, 1).Value <> ws.Cells(i, 1).Value Then
+                   
+                'Set new Ticker name
+                Ticker_Symbol = ws.Cells(i, 1).Value
+                                
+                'Add to the Ticker volume total
+                Volume_Total = Volume_Total + ws.Cells(i, 7).Value
+                
+                'Print the Ticker symbol in the Summary table. Row number keeps changing as loop through.
+                ws.Range("I" & Summary_Table_Row).Value = Ticker_Symbol
+                
+                'Print the Ticker Total Volume to the Summary table..
+                ws.Range("L" & Summary_Table_Row).Value = Volume_Total
+                ws.Range("L" & Summary_Table_Row) = Format(ws.Range("L" & Summary_Table_Row), "#,###") 'Format for coma
+                
+                'Reset the Volume total to 0
+                Volume_Total = 0
+                                      
+                '**New Retrieve last close price (assuming will be yearly close price)
+                Close_price = ws.Cells(i, 6).Value
+                
+                'Retrieve first open price (by going back i row less 2
+                Open_price = ws.Cells(First_row, 3).Value
+                
+                'Calc yearly change, i.e. absolute change
+                Yearly_change = Close_price - Open_price
+                        
+                'Need to account for 0 values in calc'ing %'ages
+                If Open_price = 0 Then
+                    Yearly_Pchange = 0
+                Else
+                    Open_price = ws.Range(
+                    Yearly_Pchange = Close_price
+                    
+                
+                
+                'Calc yearly percentage change
+                Yearly_Pchange = (Yearly_change / Open_price)
+                
+                'Print yearly change in Summary table
+                ws.Range("J" & Summary_Table_Row).Value = Yearly_change
+                
+                'Print yearly percentage change in Summary table
+                ws.Range("K" & Summary_Table_Row).Value = Yearly_Pchange
+                              
+                'Update first row number for new ticker
+                First_row = i + 1
+                                                  
+                'Add one to the summary table row. Must come last, as all code above dependent..
+                Summary_Table_Row = Summary_Table_Row + 1
+                                      
+                                      
+                      
+            'If the cell immediately following a row is the same ticker, add the volume to the current ticker
+            'Allows the accumulate volume for the current ticker, until the ticker change occurs
+            Else
+            
+                'Add to the Volume_Total (note volume is col g OR 7)
+                Volume_Total = Volume_Total + ws.Cells(i, 7).Value
+                
+                        
+                        
+            End If
+    
+        'Next i      'when using DoLoop, use Loop
+        Loop
+     
+    'Merge code:
+    ' Determine the Last Row. Number 9 refers to SummaryTableData, that was produced..
+    Dim LastRow As Integer
+    LastRow = ws.Cells(Rows.Count, 9).End(xlUp).Row
+    
+    'Format Yearly_change to 2 decimals places
+    ws.Range("J2:J" & LastRow).NumberFormat = "#0.00"
+    
+    'Format Yearly_Pchange to % and 2 decimals places
+    ws.Range("K2:K" & LastRow).NumberFormat = "#0.00%"
+    
+    'Format Volume col for autofit
+    ws.Range("I1:L1").EntireColumn.AutoFit
+    
+    'Set YC = Sheets("sheet1"),Range("xx":"xx")
+    'Set PC = Sheets("sheet1"),
+    
+        'Loop through all rows in SummaryTable, starting from row 2..
+        For i = 2 To LastRow
+            
+            'Format +ve Year_change to green
+            If ws.Cells(i, 10).Value > 0 Then
+                ws.Cells(i, 10).Interior.ColorIndex = 4
+                
+            Else
+                '-ve Yearly_change to red
+                ws.Cells(i, 10).Interior.ColorIndex = 3
+                
+            End If
+    
+        Next i
+     
+     
+    '''Merge code: for 2nd summary table
+    
+    'Print GreatestCalc headers
+    ws.Range("P1").Value = "Ticker"
+    ws.Range("Q1").Value = "Value"
+    ws.Range("O2").Value = "Greatest % Increase"
+    ws.Range("O3").Value = "Greatest % Decrease"
+    ws.Range("O4").Value = "Greateset Total Volume"
+    
+    'Set variables for max up, down & volume
+    Dim max_up As Double
+    Dim max_up_row As Double
+    Dim max_down As Double
+    Dim max_down_row As Double
+    Dim max_vol As Double
+    Dim max_vol_row As Double
+    
+    
+    ' Determine the Last Row. Number 9 refers to SummaryTableData, that was produced..
+    'Dim LastRow As Integer     'this was dim'ed earlier..
+    LastRow = ws.Cells(Rows.Count, 9).End(xlUp).Row
+    
+    
+    ' Max % increase
+    ' 1) find max up number
+    max_up = WorksheetFunction.Max(ws.Range("K2:K" & LastRow))
+    ' 2) use max up number to retrieve row number...
+    max_up_row = WorksheetFunction.Match(max_up, ws.Range("K2:K" & LastRow), 0)
+    ' 3) Use the row number to retrieve ticker, and print in summary table. And print max up value in table
+    ws.Range("P2").Value = ws.Cells(max_up_row, 9).Value
+    ws.Range("Q2").Value = max_up
+    
+    
+    'Max % decrease
+    max_down = WorksheetFunction.Min(ws.Range("K2:K" & LastRow))
+    ' 2) use max up number to retrieve row number...
+    max_down_row = WorksheetFunction.Match(max_down, ws.Range("K2:K" & LastRow), 0)
+    ' 3) Use the row number to retrieve ticker, and print in summary table. And print max up value in table
+    ws.Range("P3").Value = ws.Cells(max_down_row, 9).Value
+    ws.Range("Q3").Value = max_down
+    
+    'Max volume
+    max_vol = WorksheetFunction.Max(ws.Range("L2:L" & LastRow))
+    ' 2) use max up number to retrieve row number...
+    max_vol_row = WorksheetFunction.Match(max_vol, ws.Range("L2:L" & LastRow), 0)
+    ' 3) Use the row number to retrieve ticker, and print in summary table. And print max up value in table
+    ws.Range("P4").Value = ws.Cells(max_vol_row, 9).Value
+    ws.Range("Q4").Value = max_vol
+    
+    'Format Greatest Volume to 2 decimals places
+    ws.Range("Q4").NumberFormat = "##,##0.00"
+    
+    'Format Greatest increase decrease in summary to % and 2 decimals places
+    ws.Range("Q2:Q3").NumberFormat = "#0.00%"
+    
+    'Format Volume col for autofit
+    ws.Range("O1:Q1").EntireColumn.AutoFit
+
+'Relates "For Eash ws in Worksheets" loop
+Next
+ 
+End Sub
